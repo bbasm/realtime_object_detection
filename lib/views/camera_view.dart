@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:realtime_object_detection/controller/scan_controller.dart';
 
-
 class CameraView extends StatelessWidget {
   const CameraView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ScanController()); // Ensures a single instance
+    final controller = Get.put(ScanController());
 
     return Scaffold(
       body: Obx(() {
@@ -20,56 +19,48 @@ class CameraView extends StatelessWidget {
         }
 
         final size = MediaQuery.of(context).size;
-        final deviceRatio = size.width / size.height;
-        final cameraAspectRatio = controller.cameraController!.value.aspectRatio;
+        final previewSize = controller.cameraController!.value.previewSize!;
+        final previewAspectRatio = previewSize.height / previewSize.width;
+        const uiHeight = 275.0; // Fixed height for the UI section
 
-        // If the camera's aspect ratio is greater than the device's aspect ratio (wider than the screen)
-        if (cameraAspectRatio > deviceRatio) {
-          // Fit width and add black bars on top and bottom (letterboxing)
-          return Center(
-            child: SizedBox(
-              width: size.width,
-              height: size.width / cameraAspectRatio,
-              child: CameraPreview(controller.cameraController!),
+        return Stack(
+          children: [
+            // Camera Preview at the Top
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                width: size.width,
+                height: size.height - uiHeight, // Space excluding the UI area
+                child: OverflowBox(
+                  alignment: Alignment.topCenter, // Align the camera to the top
+                  child: AspectRatio(
+                    aspectRatio: previewAspectRatio,
+                    child: CameraPreview(controller.cameraController!),
+                  ),
+                ),
+              ),
             ),
-          );
-        } else {
-          // If the camera is taller than the screen, fit height and add black bars on the sides (pillarboxing)
-          return Center(
-            child: SizedBox(
-              height: size.height,
-              width: size.height * cameraAspectRatio,
-              child: CameraPreview(controller.cameraController!),
+            // Bottom UI Area
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: uiHeight,
+                color: Colors.grey[200],
+                child: Center(
+                  child: Text(
+                    "Add your UI here",
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                  ),
+                ),
+              ),
             ),
-          );
-        }
+          ],
+        );
       }),
     );
   }
 }
-
-
-
-
-// class CameraView extends StatelessWidget {
-//   const CameraView({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: GetBuilder<ScanController>(
-//           init: ScanController(),
-//           builder: (controller) {
-//             return controller.isCameraInitialized.value
-//                 ? SizedBox(
-//                     width: MediaQuery.of(context).size.width,
-//                     height: MediaQuery.of(context).size.height,
-//                     child: CameraPreview(controller.cameraController),
-//                   )
-//                 : const Center(
-//                     child: Text("Loading Preview..."),
-//                   );
-//           }),
-//     );
-//   }
-// }
