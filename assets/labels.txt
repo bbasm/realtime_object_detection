@@ -1,0 +1,4 @@
+0 wortel
+1 apel
+2 telur
+3 jeruk

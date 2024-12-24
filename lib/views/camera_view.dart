@@ -21,20 +21,19 @@ class CameraView extends StatelessWidget {
         final size = MediaQuery.of(context).size;
         final previewSize = controller.cameraController!.value.previewSize!;
         final previewAspectRatio = previewSize.height / previewSize.width;
-        const uiHeight = 275.0; // Fixed height for the UI section
+        const uiHeight = 290.0; // Fixed height for the UI section
 
         return Stack(
           children: [
-            // Camera Preview at the Top
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               child: SizedBox(
                 width: size.width,
-                height: size.height - uiHeight, // Space excluding the UI area
+                height: size.height - uiHeight,
                 child: OverflowBox(
-                  alignment: Alignment.topCenter, // Align the camera to the top
+                  alignment: Alignment.topCenter,
                   child: AspectRatio(
                     aspectRatio: previewAspectRatio,
                     child: CameraPreview(controller.cameraController!),
@@ -42,7 +41,8 @@ class CameraView extends StatelessWidget {
                 ),
               ),
             ),
-            // Bottom UI Area
+
+            // bottom UI area
             Positioned(
               bottom: 0,
               left: 0,
@@ -51,10 +51,16 @@ class CameraView extends StatelessWidget {
                 height: uiHeight,
                 color: Colors.grey[200],
                 child: Center(
-                  child: Text(
-                    "Add your UI here",
-                    style: TextStyle(fontSize: 18, color: Colors.black),
-                  ),
+                  child: Obx(() {
+                    return Text(
+                      controller.detectedLabel.value,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  }),
                 ),
               ),
             ),
