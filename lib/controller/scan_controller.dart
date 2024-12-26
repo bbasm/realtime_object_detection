@@ -11,7 +11,10 @@ class ScanController extends GetxController {
   var isModelLoaded = false.obs;
   var detectedLabel = 'Detecting...'.obs;
 
-  var cameraCount = 0;
+  var x = 0.0.obs, y = 0.0.obs, w = 0.0.obs, h = 0.0.obs;
+  var label = "".obs;
+
+  int cameraCount = 0;
 
   @override
   void onInit() {
@@ -28,11 +31,9 @@ class ScanController extends GetxController {
   }
 
   Future<void> initCamera() async {
-    print("Requesting permissions...");
     if (await Permission.camera.request().isGranted) {
       try {
         cameras = await availableCameras();
-        print("Available cameras: ${cameras.length}");
         if (cameras.isNotEmpty) {
           cameraController = CameraController(
             cameras[0],
@@ -41,26 +42,20 @@ class ScanController extends GetxController {
 
           await cameraController?.initialize();
 
-          if (isModelLoaded.value) {
-            await cameraController?.startImageStream((image) {
-              cameraCount++;
-              if (cameraCount % 10 == 0) {
-                cameraCount = 0;
-                objectDetector(image);
-              }
-            });
-          }
+          cameraController?.startImageStream((image) {
+            cameraCount++;
+            if (cameraCount % 10 == 0) {
+              objectDetector(image);
+            }
+          });
 
           isCameraInitialized(true);
-          print("Camera initialized!");
-        } else {
-          print("No cameras found");
         }
       } catch (e) {
         print("Error initializing camera: $e");
       }
     } else {
-      print("Permissions denied");
+      print("Camera permission denied.");
     }
   }
 
@@ -73,17 +68,16 @@ class ScanController extends GetxController {
         useGpuDelegate: false,
       );
       if (result != null) {
-        print("Model loaded: $result");
         isModelLoaded(true);
-      } else {
-        print("Failed to load model");
       }
     } catch (e) {
-      print("Error loading TFLite model: $e");
+      print("Error loading model: $e");
     }
   }
 
   Future<void> objectDetector(CameraImage image) async {
+    if (!isModelLoaded.value) return;
+
     try {
       var results = await Tflite.runModelOnFrame(
         bytesList: image.planes.map((e) => e.bytes).toList(),
@@ -96,12 +90,27 @@ class ScanController extends GetxController {
         threshold: 0.4,
       );
 
+      print("Detection results: $results"); // Debug log
+
       if (results != null && results.isNotEmpty) {
-        String result = results.first['label'] as String;
+        var detectedObject = results.first;
+
+        if (detectedObject.containsKey('rect')) {
+          x.value = (detectedObject['rect']['x'] ?? 0).toDouble();
+          y.value = (detectedObject['rect']['y'] ?? 0).toDouble();
+          w.value = (detectedObject['rect']['w'] ?? 0).toDouble();
+          h.value = (detectedObject['rect']['h'] ?? 0).toDouble();
+        } else {
+          x.value = y.value = w.value = h.value = 0.0; // Reset values
+          print("Bounding box data missing in detection results.");
+        }
+
+        String result = detectedObject['label'] as String;
         detectedLabel.value = result.replaceAll(RegExp(r'^\d+\s*'), '');
-        print("Detected: ${detectedLabel.value}");
+        label.value = detectedObject['label'].toString();
       } else {
         detectedLabel.value = 'Detecting...';
+        x.value = y.value = w.value = h.value = 0.0; // Reset values
       }
     } catch (e) {
       print("Error during detection: $e");
