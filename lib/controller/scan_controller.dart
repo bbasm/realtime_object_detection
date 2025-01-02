@@ -63,7 +63,7 @@ class ScanController extends GetxController {
     try {
       String? result = await Tflite.loadModel(
         model: "assets/model.tflite",
-        labels: "assets/labels.txt",
+        labels: "assets/labels2.txt",
         numThreads: 1,
         useGpuDelegate: false,
       );
@@ -90,27 +90,33 @@ class ScanController extends GetxController {
         threshold: 0.4,
       );
 
-      print("Detection results: $results"); // Debug log
+      print("Detection results: $results");
 
       if (results != null && results.isNotEmpty) {
         var detectedObject = results.first;
 
-        if (detectedObject.containsKey('rect')) {
-          x.value = (detectedObject['rect']['x'] ?? 0).toDouble();
-          y.value = (detectedObject['rect']['y'] ?? 0).toDouble();
-          w.value = (detectedObject['rect']['w'] ?? 0).toDouble();
-          h.value = (detectedObject['rect']['h'] ?? 0).toDouble();
-        } else {
-          x.value = y.value = w.value = h.value = 0.0; // Reset values
-          print("Bounding box data missing in detection results.");
-        }
+        // if confidence score is greated than 65%
+        if ((detectedObject['confidence'] ?? 0) > 0.65) {
+          if (detectedObject.containsKey('rect')) {
+            x.value = (detectedObject['rect']['x'] ?? 0).toDouble();
+            y.value = (detectedObject['rect']['y'] ?? 0).toDouble();
+            w.value = (detectedObject['rect']['w'] ?? 0).toDouble();
+            h.value = (detectedObject['rect']['h'] ?? 0).toDouble();
+          } else {
+            x.value = y.value = w.value = h.value = 0.0;
+            print("Bounding box data missing in detection results.");
+          }
 
-        String result = detectedObject['label'] as String;
-        detectedLabel.value = result.replaceAll(RegExp(r'^\d+\s*'), '');
-        label.value = detectedObject['label'].toString();
+          detectedLabel.value = detectedObject['label']
+              .toString()
+              .replaceAll(RegExp(r'^\d+\s*'), '');
+        } else {
+          detectedLabel.value = 'Detecting...';
+          x.value = y.value = w.value = h.value = 0.0;
+        }
       } else {
         detectedLabel.value = 'Detecting...';
-        x.value = y.value = w.value = h.value = 0.0; // Reset values
+        x.value = y.value = w.value = h.value = 0.0;
       }
     } catch (e) {
       print("Error during detection: $e");
